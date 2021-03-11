@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -16,9 +17,14 @@ var hits int
 var enqueued int
 var done chan bool
 
-var queueThreshold = 256
-var queueSize = 1000
+var queueThreshold = 125
+var queueSize = 100
+var jdbcPoolSize = 25
 var processingTime = 20
+
+const defaultDelayFactor = 4
+
+var currentDelayFactor = defaultDelayFactor
 
 func startTicker() {
 	fmt.Println("Ticker started")
@@ -31,16 +37,20 @@ func startTicker() {
 				ticker.Stop()
 				return
 			case <-ticker.C:
+				if hits == 0 && enqueued > 0 {
+					enqueued = 0
+				}
+
 				if hits < queueThreshold && enqueued == 0 {
 					// OK
-					fmt.Printf("[%d hits/s, %d in queue ] 200 OK -> no queue\n", hits, enqueued)
+					fmt.Printf("[%d hits/s, %d in queue ] 200 OK -> %dms\n", hits, enqueued, processingTime)
 				} else {
 					if enqueued > queueSize {
 						//Deny
 						fmt.Printf("[%d hits/s, %d in queue ] 503 DENIED\n", hits, enqueued)
 					} else {
 						//Slowdown
-						fmt.Printf("[%d hits/s, %d in queue ] 200 OK -> %dms delayed\n", hits, enqueued, enqueued*processingTime)
+						fmt.Printf("[%d hits/s, %d in queue ] 200 OK -> %dms\n", hits, enqueued, (enqueued/currentDelayFactor)*processingTime+processingTime)
 					}
 				}
 				hits = 0
@@ -78,6 +88,13 @@ func main() {
 		}
 	}
 
+	if jdbcPoolSizeStr := os.Getenv("JDBC_POOL_SIZE"); jdbcPoolSizeStr != "" {
+		if jdbcPoolSize, err = strconv.Atoi(jdbcPoolSizeStr); err != nil {
+			fmt.Errorf("Invalid JDBC_POOL_SIZE : %s\n", err)
+			os.Exit(1)
+		}
+	}
+
 	if processingTimeStr := os.Getenv("PROCESSING_TIME"); processingTimeStr != "" {
 		if processingTime, err = strconv.Atoi(processingTimeStr); err != nil {
 			fmt.Errorf("Invalid PROCESSING_TIME : %s\n", err)
@@ -100,7 +117,13 @@ func main() {
 			} else {
 				//Slowdown
 				enqueued++
-				time.Sleep(time.Duration(enqueued*processingTime) * time.Millisecond)
+				if enqueued > jdbcPoolSize {
+					currentDelayFactor = int(math.Ceil(float64(queueSize-jdbcPoolSize) / float64(queueSize-enqueued)))
+				} else {
+					currentDelayFactor = defaultDelayFactor
+				}
+
+				time.Sleep(time.Duration(enqueued*processingTime/currentDelayFactor) * time.Millisecond)
 				c.JSON(200, processRequest())
 				if enqueued > 0 {
 					enqueued--
@@ -114,6 +137,6 @@ func main() {
 	server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGHUP] = append(server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGHUP], func() { stopTicker() })
 	server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGINT] = append(server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGINT], func() { stopTicker() })
 	server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGTERM] = append(server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGTERM], func() { stopTicker() })
-	fmt.Printf("Starting server - QUEUE_THRESHOLD : %d, QUEUE_SIZE : %d, PROCESSING_TIME : %dms\n", queueThreshold, queueSize, processingTime)
+	fmt.Printf("Starting server - QUEUE_THRESHOLD : %d, QUEUE_SIZE : %d, PROCESSING_TIME : %d, JDBC_POOL_SIZE : %d\n", queueThreshold, queueSize, processingTime, jdbcPoolSize)
 	server.ListenAndServe()
 }
