@@ -76,28 +76,28 @@ func main() {
 
 	if queueThresholdStr := os.Getenv("QUEUE_THRESHOLD"); queueThresholdStr != "" {
 		if queueThreshold, err = strconv.Atoi(queueThresholdStr); err != nil {
-			fmt.Errorf("Invalid QUEUE_THRESHOLD : %s\n", err)
+			fmt.Printf("Invalid QUEUE_THRESHOLD : %s\n", err)
 			os.Exit(1)
 		}
 	}
 
 	if queueSizeStr := os.Getenv("QUEUE_SIZE"); queueSizeStr != "" {
 		if queueSize, err = strconv.Atoi(queueSizeStr); err != nil {
-			fmt.Errorf("Invalid QUEUE_SIZE : %s\n", err)
+			fmt.Printf("Invalid QUEUE_SIZE : %s\n", err)
 			os.Exit(1)
 		}
 	}
 
 	if jdbcPoolSizeStr := os.Getenv("JDBC_POOL_SIZE"); jdbcPoolSizeStr != "" {
 		if jdbcPoolSize, err = strconv.Atoi(jdbcPoolSizeStr); err != nil {
-			fmt.Errorf("Invalid JDBC_POOL_SIZE : %s\n", err)
+			fmt.Printf("Invalid JDBC_POOL_SIZE : %s\n", err)
 			os.Exit(1)
 		}
 	}
 
 	if processingTimeStr := os.Getenv("PROCESSING_TIME"); processingTimeStr != "" {
 		if processingTime, err = strconv.Atoi(processingTimeStr); err != nil {
-			fmt.Errorf("Invalid PROCESSING_TIME : %s\n", err)
+			fmt.Printf("Invalid PROCESSING_TIME : %s\n", err)
 			os.Exit(1)
 		}
 	}

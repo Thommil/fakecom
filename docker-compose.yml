@@ -1,0 +1,17 @@
+services:
+  kcom1:
+    build: ./dockerfile
+    ports:
+      - "8080"
+  kcom2:
+    build: ./dockerfile
+    ports:
+      - "8080"
+  kcom3:
+    build: ./dockerfile
+    ports:
+      - "8080" 
+  nginx:
+    build: ./dockerfile-nginx
+    ports:
+      - "8080:8080"
