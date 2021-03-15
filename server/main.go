@@ -132,7 +132,7 @@ func main() {
 		}
 	})
 
-	server := endless.NewServer(":8080", router)
+	server := endless.NewServer(":9080", router)
 	startTicker()
 	server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGHUP] = append(server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGHUP], func() { stopTicker() })
 	server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGINT] = append(server.SignalHooks[endless.PRE_SIGNAL][syscall.SIGINT], func() { stopTicker() })

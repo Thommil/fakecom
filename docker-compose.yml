@@ -1,17 +1,20 @@
+version: "3"
 services:
   kcom1:
-    build: ./dockerfile
+    build: .
     ports:
-      - "8080"
+      - "9080"
   kcom2:
-    build: ./dockerfile
+    build: .
     ports:
-      - "8080"
+      - "9080"
   kcom3:
-    build: ./dockerfile
+    build: .
     ports:
-      - "8080" 
+      - "9080" 
   nginx:
-    build: ./dockerfile-nginx
+    build:
+      context: .
+      dockerfile: dockerfile-nginx
     ports:
-      - "8080:8080"
+      - "9080:9080"
